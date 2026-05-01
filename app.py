@@ -425,40 +425,43 @@ def build_popup_html(event: dict[str, Any]) -> str:
     genres = html.escape(", ".join(event.get("genres") or []) or "Unknown style")
 
     description = str(event.get("description") or "").strip()
-    if len(description) > 600:
-        description = description[:600] + "..."
+    if len(description) > 300:
+        description = description[:300] + "..."
     description = html.escape(description)
 
     event_url = event.get("event_url")
     image_url = event.get("image_url")
 
-    organizer = html.escape(str(event.get("organizer") or event.get("nameOrganizer") or ""))
-    status = html.escape(str(event.get("status") or event.get("nameStatus") or ""))
+    organizer = html.escape(str(event.get("organizer") or ""))
+    status = html.escape(str(event.get("status") or ""))
 
     image_html = ""
     if image_url:
         image_html = f"""
         <img src="{html.escape(str(image_url))}"
-             style="width:100%; max-height:160px; object-fit:cover;
-                    border-radius:10px; margin-bottom:10px;">
+             style="
+                width:100%;
+                max-height:110px;
+                object-fit:cover;
+                border-radius:8px;
+                margin-bottom:8px;
+             ">
         """
 
     organizer_html = ""
     if organizer:
-        organizer_html = f"""
-        <p style="margin:3px 0;"><b>Organizer:</b> {organizer}</p>
-        """
+        organizer_html = f"<p><b>Organizer:</b> {organizer}</p>"
 
     status_html = ""
     if status:
-        status_html = f"""
-        <p style="margin:3px 0;"><b>Status:</b> {status}</p>
-        """
+        status_html = f"<p><b>Status:</b> {status}</p>"
 
     description_html = ""
     if description:
         description_html = f"""
-        <p style="margin-top:10px; line-height:1.35;">{description}</p>
+        <p style="margin-top:8px; line-height:1.3;">
+            {description}
+        </p>
         """
 
     link_html = ""
@@ -466,13 +469,14 @@ def build_popup_html(event: dict[str, Any]) -> str:
         link_html = f"""
         <a href="{html.escape(str(event_url))}" target="_blank"
            style="
-               display:inline-block;
-               margin-top:10px;
-               padding:7px 10px;
+               display:block;
+               text-align:center;
+               margin-top:8px;
+               padding:8px 10px;
                background:#111827;
                color:white;
                text-decoration:none;
-               border-radius:7px;
+               border-radius:8px;
                font-weight:600;
            ">
            Open on Goabase
@@ -481,40 +485,37 @@ def build_popup_html(event: dict[str, Any]) -> str:
 
     return f"""
     <div style="
-        width:310px;
+        width:230px;
+        max-height:330px;
+        overflow-y:auto;
         font-family:Arial, sans-serif;
         color:#111827;
+        font-size:12px;
+        line-height:1.3;
     ">
         {image_html}
 
-        <h3 style="
-            margin:0 0 8px 0;
-            font-size:17px;
-            line-height:1.25;
+        <h4 style="
+            margin:0 0 7px 0;
+            font-size:15px;
+            line-height:1.2;
+            color:#111827;
         ">
             {title}
-        </h3>
+        </h4>
 
-        <div style="
-            background:#f3f4f6;
-            padding:8px;
-            border-radius:8px;
-            margin-bottom:8px;
-        ">
-            <p style="margin:3px 0;"><b>Start:</b> {start}</p>
-            <p style="margin:3px 0;"><b>End:</b> {end}</p>
-            <p style="margin:3px 0;"><b>City:</b> {city}</p>
-            <p style="margin:3px 0;"><b>Venue:</b> {venue}</p>
-            <p style="margin:3px 0;"><b>Style:</b> {genres}</p>
-            {organizer_html}
-            {status_html}
-        </div>
+        <p><b>Start:</b> {start}</p>
+        <p><b>End:</b> {end}</p>
+        <p><b>City:</b> {city}</p>
+        <p><b>Venue:</b> {venue}</p>
+        <p><b>Style:</b> {genres}</p>
+        {organizer_html}
+        {status_html}
 
         {description_html}
         {link_html}
     </div>
     """
-
 
 
 def build_map(events: list[dict[str, Any]], map_style: str) -> Map:
@@ -537,7 +538,7 @@ def build_map(events: list[dict[str, Any]], map_style: str) -> Map:
 
         Marker(
             location=[event["lat"], event["lon"]],
-            popup=Popup(popup_html, max_width=340),
+            popup=Popup(popup_html, max_width=200),
             tooltip=event.get("title") or "Event",
             icon=Icon(color=get_marker_color(event), icon="music", prefix="fa"),
         ).add_to(marker_cluster)
@@ -738,7 +739,7 @@ def main() -> None:
         st_folium(
             map_object,
             width=None,
-            height=500,
+            height=520,
         )
 
     with right_col:
