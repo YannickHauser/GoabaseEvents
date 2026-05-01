@@ -49,52 +49,52 @@ def add_genre_legend(map_object: Map) -> None:
     {% macro html(this, kwargs) %}
     <div style="
         position: fixed;
-        bottom: 35px;
-        left: 35px;
+        bottom: 18px;
+        left: 50%;
+        transform: translateX(-50%);
         z-index: 999999;
         background-color: white;
-        padding: 14px 16px;
-        border-radius: 12px;
+        padding: 8px 12px;
+        border-radius: 999px;
         box-shadow: 0 4px 16px rgba(0,0,0,0.25);
         font-family: Arial, sans-serif;
-        font-size: 13px;
+        font-size: 12px;
         color: #111827;
-        min-width: 175px;
         border: 1px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        white-space: nowrap;
+        max-width: 92%;
+        overflow-x: auto;
     ">
-        <div style="font-weight: 700; margin-bottom: 8px; color: #111827;">
-            Music style
-        </div>
+        <span style="font-weight: 700; color: #111827; margin-right: 2px;">
+            Style
+        </span>
 
-        <div style="margin-bottom: 5px; color: #111827;">
-            <span style="color: purple; font-size: 18px;">●</span>
-            Festival
-        </div>
+        <span style="color: #111827;">
+            <span style="color: purple; font-size: 16px;">●</span> Festival
+        </span>
 
-        <div style="margin-bottom: 5px; color: #111827;">
-            <span style="color: blue; font-size: 18px;">●</span>
-            Club
-        </div>
+        <span style="color: #111827;">
+            <span style="color: blue; font-size: 16px;">●</span> Club
+        </span>
 
-        <div style="margin-bottom: 5px; color: #111827;">
-            <span style="color: green; font-size: 18px;">●</span>
-            Outdoor / Open Air
-        </div>
+        <span style="color: #111827;">
+            <span style="color: green; font-size: 16px;">●</span> Outdoor
+        </span>
 
-        <div style="margin-bottom: 5px; color: #111827;">
-            <span style="color: darkviolet; font-size: 18px;">●</span>
-            Psytrance / Goa
-        </div>
+        <span style="color: #111827;">
+            <span style="color: darkviolet; font-size: 16px;">●</span> Goa
+        </span>
 
-        <div style="margin-bottom: 5px; color: #111827;">
-            <span style="color: cadetblue; font-size: 18px;">●</span>
-            Techno
-        </div>
+        <span style="color: #111827;">
+            <span style="color: cadetblue; font-size: 16px;">●</span> Techno
+        </span>
 
-        <div style="color: #111827;">
-            <span style="color: gray; font-size: 18px;">●</span>
-            Other
-        </div>
+        <span style="color: #111827;">
+            <span style="color: gray; font-size: 16px;">●</span> Other
+        </span>
     </div>
     {% endmacro %}
     """
@@ -102,7 +102,7 @@ def add_genre_legend(map_object: Map) -> None:
     legend = MacroElement()
     legend._template = Template(legend_html)
     map_object.get_root().add_child(legend)
-
+    
 
 def inject_custom_css() -> None:
     st.markdown(
