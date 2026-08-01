@@ -15,9 +15,29 @@ from goabase_ingestion import fetch_goabase_events_switzerland
 import streamlit.components.v1 as components
 from branca.element import MacroElement
 from jinja2 import Template
-
-
+import math
 import html
+import re
+from typing import Any
+
+
+def sanitize_event_text(value: Any) -> str:
+    if value is None:
+        return ""
+
+    text = str(value)
+
+    # Replace problematic typographic/template characters.
+    text = text.replace("`", "'")
+
+    # Remove invisible control characters.
+    text = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]", "", text)
+
+    return text.strip()
+
+
+
+
 
 CACHE_FILE = Path("events_cache.json")
 
@@ -26,6 +46,31 @@ st.set_page_config(
     page_icon="🎵",
     layout="wide",
 )
+
+
+def validate_event_for_map(event: dict[str, Any]) -> tuple[bool, str]:
+    if not event_has_coordinates(event):
+        return False, "invalid coordinates"
+
+    title = event.get("title")
+    if not isinstance(title, str) or not title.strip():
+        return False, "missing or invalid title"
+
+    event_url = event.get("event_url")
+    if event_url is not None and not isinstance(event_url, str):
+        return False, "invalid event URL"
+
+    image_url = event.get("image_url")
+    if image_url is not None and not isinstance(image_url, str):
+        return False, "invalid image URL"
+
+    genres = event.get("genres")
+    if genres is not None and not isinstance(genres, list):
+        return False, "genres is not a list"
+
+    return True, ""
+
+
 
 def get_marker_color(event: dict[str, Any]) -> str:
     genres = [str(g).lower() for g in event.get("genres", [])]
@@ -315,7 +360,34 @@ def load_events(limit: int = 500) -> list[dict[str, Any]]:
         with open(CACHE_FILE, "w", encoding="utf-8") as file:
             json.dump(events, file, ensure_ascii=False, indent=2)
 
+
+        invalid_events = [
+            event
+            for event in events
+            if not event_has_coordinates(event)
+        ]
+
+        if invalid_events:
+            st.warning(
+                f"{len(invalid_events)} events have invalid or missing coordinates "
+                "and were excluded from the map."
+            )
+
+            with st.expander("Show excluded events"):
+                for event in invalid_events:
+                    st.write(
+                        {
+                            "title": event.get("title"),
+                            "genre": event.get("genres"),
+                            "lat": event.get("lat"),
+                            "lon": event.get("lon"),
+                            "city": event.get("city"),
+                        }
+                    )
+
         return events
+
+
 
     except Exception as exc:
         st.warning(
@@ -353,8 +425,34 @@ def format_datetime(value: Any) -> str:
     return dt.strftime("%d.%m.%Y %H:%M")
 
 
+import math
+
+
 def event_has_coordinates(event: dict[str, Any]) -> bool:
-    return event.get("lat") is not None and event.get("lon") is not None
+    lat = event.get("lat")
+    lon = event.get("lon")
+
+    try:
+        lat = float(lat)
+        lon = float(lon)
+    except (TypeError, ValueError):
+        return False
+
+    if not math.isfinite(lat) or not math.isfinite(lon):
+        return False
+
+    # Explicitly reject placeholder coordinates.
+    if lat == 0 or lon == 0:
+        return False
+
+    # Switzerland plus a small border margin.
+    if not 45.5 <= lat <= 48.0:
+        return False
+
+    if not 5.5 <= lon <= 11.0:
+        return False
+
+    return True
 
 
 def get_all_genres(events: list[dict[str, Any]]) -> list[str]:
@@ -417,7 +515,9 @@ def filter_events(
 
 
 def build_popup_html(event: dict[str, Any]) -> str:
-    title = html.escape(str(event.get("title") or "Untitled event"))
+    title = html.escape(
+        sanitize_event_text(event.get("title") or "Untitled event")
+    )
     city = html.escape(str(event.get("city") or "Unknown city"))
     venue = html.escape(str(event.get("venue_name") or "Venue not specified"))
     start = html.escape(format_datetime(event.get("start_datetime")))
@@ -518,7 +618,10 @@ def build_popup_html(event: dict[str, Any]) -> str:
     """
 
 
-def build_map(events: list[dict[str, Any]], map_style: str) -> Map:
+def build_map(
+    events: list[dict[str, Any]],
+    map_style: str,
+) -> Map:
     swiss_center = [46.8182, 8.2275]
 
     m = Map(
@@ -527,22 +630,28 @@ def build_map(events: list[dict[str, Any]], map_style: str) -> Map:
         tiles=map_style,
     )
 
-
     marker_cluster = MarkerCluster().add_to(m)
 
     for event in events:
         if not event_has_coordinates(event):
             continue
 
-        popup_html = build_popup_html(event)
+        lat = float(event["lat"])
+        lon = float(event["lon"])
 
         Marker(
-            location=[event["lat"], event["lon"]],
-            popup=Popup(popup_html, max_width=200),
-            tooltip=event.get("title") or "Event",
-            icon=Icon(color=get_marker_color(event), icon="music", prefix="fa"),
+            location=[float(event["lat"]), float(event["lon"])],
+            popup=Popup(
+                build_popup_html(event),
+                max_width=250,
+            ),
+            icon=Icon(
+                color=get_marker_color(event),
+                icon="music",
+                prefix="fa",
+            ),
         ).add_to(marker_cluster)
-    
+
     add_genre_legend(m)
 
     return m
@@ -629,6 +738,16 @@ def main() -> None:
     except Exception as exc:
         st.error(f"Could not load Goabase events: {exc}")
         st.stop()
+
+
+
+
+
+
+
+
+
+
 
     events_with_coordinates = [event for event in events if event_has_coordinates(event)]
 
@@ -721,6 +840,8 @@ def main() -> None:
         date_to=date_to,
     )
 
+
+
     col1, col2, col3 = st.columns(3)
     col1.metric("Fetched events", len(events))
     col2.metric("Events with map location", len(events_with_coordinates))
@@ -731,8 +852,14 @@ def main() -> None:
         st.stop()
 
 
-    map_object = build_map(filtered_events, map_style=map_style)
-    
+    map_events = [
+        event
+        for event in filtered_events
+        if event_has_coordinates(event)
+    ]
+
+    map_object = build_map(map_events, map_style=map_style)   
+
     left_col, right_col = st.columns([2.4, 1])
 
     with left_col:
