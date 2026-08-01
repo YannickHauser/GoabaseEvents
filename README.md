@@ -3,6 +3,8 @@
 An interactive Streamlit app that displays Goabase events in Switzerland on a map.  
 Users can explore upcoming raves, festivals, club nights, and open-air events, filter them by music style and date, and click map markers to view event details.
 
+The app can be reached under: https://goabaseevents-switzerland.streamlit.app/
+
 ## Features
 
 - Interactive Switzerland map
